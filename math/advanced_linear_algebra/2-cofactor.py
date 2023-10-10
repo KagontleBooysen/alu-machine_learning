@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-from typing import List
-
-def cofactor(matrix: List[List[int]]) -> List[List[int]]:
+def cofactor(matrix):
     """
     Calculate the cofactor matrix of a square matrix.
 
     Args:
-        matrix (List[List[int]]): The input square matrix.
+        matrix (list of list of int): The input square matrix.
 
     Returns:
-        List[List[int]]: The cofactor matrix of the input matrix.
+        list of list of int: The cofactor matrix of the input matrix.
 
     Raises:
         TypeError: If the input is not a list of lists.
@@ -26,7 +24,7 @@ def cofactor(matrix: List[List[int]]) -> List[List[int]]:
         raise ValueError("matrix is not square or is empty")
 
     # Helper function to calculate the determinant of a 2x2 matrix
-    def determinant_2x2(mat: List[List[int]]) -> int:
+    def determinant_2x2(mat):
         return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]
 
     # Initialize an empty cofactor matrix
