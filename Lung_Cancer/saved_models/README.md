@@ -2,20 +2,16 @@ Trained and tested a ML model for predicting lung cancer & analyzed various resu
 
 In optimizing the neural network for the project, several key parameters were carefully considered and tuned to enhance model performance. Stochastic Gradient Descent (SGD) was employed with a learning rate of 0.01 to balance convergence speed and stability during training. A batch size of 32 was chosen for the Mini-Batch Gradient Descent to ensure computational efficiency and stable model updates. Learning rate scheduling was implemented with a time-based decay strategy, reducing the learning rate after 15 epochs to fine-tune convergence. Adaptive Learning Rate Methods, specifically Adam, featured a learning rate of 0.01, Beta1 of 0.9, Beta2 of 0.999, and an epsilon value of 1e-8, providing stability and effective adaptation during training. L2 regularization with a lambda value of 0.01 was utilized for regularization purposes, preventing overfitting by penalizing large weights. Dropout, with a rate of 0.5, was implemented to further prevent overfitting by randomly dropping neurons during training. Early stopping, set with a patience of 5 epochs, helped balance training time and prevent overfitting by halting when no improvement was observed. The parameter tuning process involved grid search, random search, and cross-validation, ensuring a thorough exploration of parameter spaces. Empirical evaluation and iterative experimentation played a pivotal role, with constant monitoring of metrics guiding the selection of optimal parameter values for a well-tailored and effective neural network model.
 
-Lung Cancer Prediction Project
-Optimization Techniques
+**Lung Cancer Prediction Project**
+
+**Optimization Techniques**
 Data Preprocessing
 Before model training, thorough data preprocessing techniques were applied to enhance the performance of the lung cancer prediction model.
 
-Handling Missing Values
+**Handling Missing Values**
 
-Technique: Imputation of Missing Data
-Explanation: Missing values in relevant features were imputed using appropriate methods to ensure data completeness.
-Removal of Less Important Columns
-
-Technique: Removal of 'title,' 'town,' and 'state'
-Explanation: Certain columns deemed less important for lung cancer prediction, such as 'title,' 'town,' and 'state,' were removed to streamline the input features for the model.
-Outlier Removal
+**Technique**: Imputation of Missing Data
+**Explanation**: Missing values in relevant features were imputed using appropriate methods to ensure data completeness.
 
 Technique: IQR-based Outlier Removal
 Explanation: Outliers in key features were detected and removed using the Interquartile Range (IQR) method to enhance the model's robustness.
@@ -23,31 +19,38 @@ Dropping Unused Categorical Features
 
 Technique: Dropping less relevant categorical features
 Explanation: Unused categorical features that were not contributing significantly to the prediction task were dropped from the dataset.
-Model Training
+
+
+**Model Training**
 For predicting lung cancer occurrences in South Africa, a neural network was implemented using TensorFlow and Keras.
 
-Model Architecture
+**Model Architecture**
 
 Technique: Neural Network Architecture
 Explanation: A sequential model with dense layers, dropout for regularization, and appropriate activation functions was designed to learn patterns from the lung cancer dataset.
-Loss Function and Regularization
+
+**Loss Function and Regularization**
 
 Technique: Binary Crossentropy Loss and L2 Regularization
 Explanation: Binary cross-entropy loss was chosen for binary classification, and L2 regularization was applied to prevent overfitting during training.
-Callbacks for Early Stopping
+
+**Callbacks for Early Stopping**
 
 Technique: EarlyStopping Callback
 Explanation: EarlyStopping was implemented to monitor the validation loss and halt training if there is no improvement, preventing overfitting and reducing training time.
-Evaluation Metrics
+
+**Evaluation Metrics**
 
 Technique: Binary Classification Metrics (Accuracy, Precision, Recall, F1 Score)
 Explanation: Binary classification metrics were employed to evaluate the model's performance in predicting lung cancer occurrences.
-Hyperparameter Tuning
-Learning Rate
 
+**Hyperparameter Tuning**
+
+Learning Rate
 Technique: Adaptive Learning Rate (Adam Optimizer)
 Explanation: The Adam optimizer, with its adaptive learning rate mechanism, was employed to automatically adjust the learning rate during training, improving convergence speed.
-Model Variations
+
+**Model Variations**
 
 Technique: Dropout for Regularization
 Explanation: Dropout layers were added to certain parts of the neural network architecture to prevent overfitting and enhance model generalization.
