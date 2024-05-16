@@ -165,50 +165,51 @@ class NST:
             NST.gram_matrix(layer) for layer in style_features
         ]
 
-    def layer_style_cost(self, style_output, gram_target):
-        """Calculates the style cost for a single layer
+        def layer_style_cost(self, style_output, gram_target):
+    """Calculates the style cost for a single layer
 
-        Args:
-            style_output: Containing the layer style ouput of the generated
-                image.
-            gram_target: Gram matrix of the target style output for that layer
+    Args:
+        style_output: Containing the layer style ouput of the generated
+            image.
+        gram_target: Gram matrix of the target style output for that layer
 
-        Returns:
-            Layers's style cost
+    Returns:
+        Layer's style cost
 
-        """
-        if not isinstance(style_output, (tf.Tensor, tf.Variable))\
-                or tf.rank(style_output).numpy() != 4:
-            raise TypeError('style_output must be a tensor of rank 4')
+    """
+    if not isinstance(style_output, (tf.Tensor, tf.Variable)) \
+            or tf.rank(style_output).numpy() != 4:
+        raise TypeError('style_output must be a tensor of rank 4')
 
-        _, h, w, c = tf.shape(style_output).numpy()
-        if not isinstance(gram_target, (tf.Tensor, tf.Variable))\
-                or gram_target.shape != (1, c, c):
-            raise TypeError(
-                'gram_target must be a tensor of shape [1, {}, {}]'
-                .format(c, c)
-            )
-        gram_style = NST.gram_matrix(style_output)
-        return tf.reduce_mean(tf.square(gram_style - gram_target))
+    _, h, w, c = tf.shape(style_output).numpy()
+    if not isinstance(gram_target, (tf.Tensor, tf.Variable)) \
+            or gram_target.shape != (1, c, c):
+        raise TypeError(
+            'gram_target must be a tensor of shape [1, {}, {}]'
+            .format(c, c)
+        )
+    gram_style = NST.gram_matrix(style_output)
+    return tf.reduce_mean(tf.square(gram_style - gram_target))
 
-    def style_cost(self, style_outputs):
-        """Calculates the style cost for generated image
+def style_cost(self, style_outputs):
+    """Calculates the style cost for generated image
 
-        Args:
-            style_outputs (list(tf.Tensor)): style outputs for the gnerated
-                image.
+    Args:
+        style_outputs (list(tf.Tensor)): style outputs for the generated
+            image.
 
-        Returns:
-            The style cost
+    Returns:
+        The style cost
 
-        """
-        length = len(self.style_layers)
-        if not isinstance(style_outputs, list)\
-                or len(style_outputs) != length:
-            raise TypeError('style_outputs must be a list with a length of {}'.
-                            format(length))
-        style_score = 0
-        weight = 1 / length
-        for target, output in zip(self.gram_style_features, style_outputs):
-            style_score += weight * self.layer_style_cost(output, target)
-        return style_score
+    """
+    length = len(self.style_layers)
+    if not isinstance(style_outputs, list) \
+            or len(style_outputs) != length + 1:
+        raise TypeError('style_outputs must be a list with a length of {}'.
+                        format(length + 1))
+    style_score = 0
+    weight = 1 / length
+    for target, output in zip(self.gram_style_features, style_outputs[:-1]):
+        style_score += weight * self.layer_style_cost(output, target)
+    return style_score
+
