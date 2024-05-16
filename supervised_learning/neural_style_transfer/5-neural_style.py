@@ -15,13 +15,19 @@ class NST:
     content_layer = 'block5_conv2'
 
     def __init__(self, style_image, content_image, alpha=1e4, beta=1):
-        """Initialize the NST class with style and content images"""
+        """
+        Initialize the NST class with style and content images
+        :param style_image: numpy.ndarray - image used for style reference
+        :param content_image: numpy.ndarray - image used for content reference
+        :param alpha: float - weight for content cost
+        :param beta: float - weight for style cost
+        """
         self.style_image = self.scale_image(style_image)
         self.content_image = self.scale_image(content_image)
         self.alpha = alpha
         self.beta = beta
         self.model = self.load_model()
-        self.gram_style_features = self.generate_features(self.style_image)
+        self.gram_style_features = self.generate_features(self.style_image)[:-1]
         self.content_feature = self.generate_features(self.content_image)[-1]
 
     @staticmethod
@@ -29,12 +35,13 @@ class NST:
         """
         Rescales an image such that its pixel values are between 0 and 1
         and its largest side is 512 pixels.
+        :param image: numpy.ndarray - input image
+        :return: tensorflow.Tensor - scaled image
         """
-        err = "image must be a numpy.ndarray with shape (h, w, 3)"
         if not isinstance(image, np.ndarray):
-            raise TypeError(err)
+            raise TypeError("image must be a numpy.ndarray with shape (h, w, 3)")
         if image.ndim != 3 or image.shape[-1] != 3:
-            raise TypeError(err)
+            raise TypeError("image must be a numpy.ndarray with shape (h, w, 3)")
 
         max_dim = 512
         long_dim = max(image.shape[:-1])
@@ -48,7 +55,10 @@ class NST:
         return image
 
     def load_model(self):
-        """Instantiates a VGG19 model from Keras"""
+        """
+        Instantiates a VGG19 model from Keras
+        :return: tensorflow.keras.Model - model for style and content extraction
+        """
         vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
         vgg.trainable = False
         outputs = [vgg.get_layer(name).output for name in self.style_layers]
@@ -60,6 +70,8 @@ class NST:
     def gram_matrix(input_tensor):
         """
         Calculates the Gram matrix for a given input tensor.
+        :param input_tensor: tensorflow.Tensor - input tensor
+        :return: tensorflow.Tensor - Gram matrix
         """
         result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
         input_shape = tf.shape(input_tensor)
@@ -69,6 +81,8 @@ class NST:
     def generate_features(self, image):
         """
         Extracts the style and content features from the given image.
+        :param image: tensorflow.Tensor - input image
+        :return: list of tensorflow.Tensor - features from the model
         """
         preprocessed_image = tf.keras.applications.vgg19.preprocess_input(
             image * 255)
@@ -78,6 +92,8 @@ class NST:
     def style_cost(self, style_outputs):
         """
         Calculates the style cost for the generated image.
+        :param style_outputs: list of tensorflow.Tensor - style outputs
+        :return: tensorflow.Tensor - style cost
         """
         if not isinstance(style_outputs, list) or len(style_outputs) != len(self.style_layers):
             raise TypeError(f'style_outputs must be a list with a length of {len(self.style_layers)}')
