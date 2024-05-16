@@ -8,15 +8,15 @@ class NST:
     """Neural Style Transfer class
 
     Attributes:
-        style_layers (list): The pretrained slected layers for the style.
-        content_layers (string): Is represent the pretrained slected layer for
+        style_layers (list): The pretrained selected layers for the style.
+        content_layer (string): Represents the pretrained selected layer for
             the content.
 
     Raises:
         TypeError: If style_image is not np.ndarray with shape (h, w, 3)
         TypeError: If content_image is not np.ndarray with shape (h, w, 3)
-        TypeError: If beta is a negative value.
         TypeError: If alpha is a negative value.
+        TypeError: If beta is a negative value.
 
     """
     style_layers = [
@@ -28,16 +28,16 @@ class NST:
     ]
     content_layer = 'block5_conv2'
 
-    def __init__(self, style_image, content_image,  alpha=1e4, beta=1):
-        """Initaializer"""
-        if not isinstance(style_image, np.ndarray)\
-                or len(style_image.shape) != 3\
+    def __init__(self, style_image, content_image, alpha=1e4, beta=1):
+        """Initializer"""
+        if not isinstance(style_image, np.ndarray) \
+                or len(style_image.shape) != 3 \
                 or style_image.shape[2] != 3:
             raise TypeError(
                 'style_image must be a numpy.ndarray with shape (h, w, 3)'
             )
-        if not isinstance(content_image, np.ndarray)\
-                or len(content_image.shape) != 3\
+        if not isinstance(content_image, np.ndarray) \
+                or len(content_image.shape) != 3 \
                 or content_image.shape[2] != 3:
             raise TypeError(
                 'content_image must be a numpy.ndarray with shape (h, w, 3)'
@@ -61,7 +61,7 @@ class NST:
         and its largest side is 512 pixels.
 
         Args:
-            image (np.ndarray): Is containing the image to be scaled of shape
+            image (np.ndarray): Contains the image to be scaled of shape
                 (h, w, 3) where respectively the height the width and the
                 number of channels.
 
@@ -69,8 +69,8 @@ class NST:
             tf.Tensor: The scaled image
 
         """
-        if not isinstance(image, np.ndarray)\
-                or len(image.shape) != 3\
+        if not isinstance(image, np.ndarray) \
+                or len(image.shape) != 3 \
                 or image.shape[2] != 3:
             raise TypeError(
                 'image must be a numpy.ndarray with shape (h, w, 3)'
@@ -123,14 +123,14 @@ class NST:
         """Calculates the gram matrices
 
         Args:
-            input_layer (tf.Tensor): containing the layer ouput whose gram
+            input_layer (tf.Tensor): Contains the layer output whose gram
                 matrix should be calculated of shape (1, h, w, c)
 
         Returns:
-            tf.Tensor: Containing the gram matrix of shape (1, c, c)
+            tf.Tensor: Contains the gram matrix of shape (1, c, c)
 
         """
-        if not isinstance(input_layer, (tf.Tensor, tf.Variable))\
+        if not isinstance(input_layer, (tf.Tensor, tf.Variable)) \
                 or tf.rank(input_layer).numpy() != 4:
             raise TypeError('input_layer must be a tensor of rank 4')
 
@@ -165,51 +165,45 @@ class NST:
             NST.gram_matrix(layer) for layer in style_features
         ]
 
-        def layer_style_cost(self, style_output, gram_target):
-    """Calculates the style cost for a single layer
+    def layer_style_cost(self, style_output, gram_target):
+        """Calculates the style cost for a single layer
 
-    Args:
-        style_output: Containing the layer style ouput of the generated
-            image.
-        gram_target: Gram matrix of the target style output for that layer
+        Args:
+            style_output: Contains the layer style output of the generated
+                image.
+            gram_target: Gram matrix of the target style output for that layer
 
-    Returns:
-        Layer's style cost
+        Returns:
+            Layer's style cost
 
-    """
-    if not isinstance(style_output, (tf.Tensor, tf.Variable)) \
-            or tf.rank(style_output).numpy() != 4:
-        raise TypeError('style_output must be a tensor of rank 4')
+        """
+        if not isinstance(style_output, (tf.Tensor, tf.Variable)) \
+                or tf.rank(style_output).numpy() != 4:
+            raise TypeError('style_output must be a tensor of rank 4')
 
-    _, h, w, c = tf.shape(style_output).numpy()
-    if not isinstance(gram_target, (tf.Tensor, tf.Variable)) \
-            or gram_target.shape != (1, c, c):
-        raise TypeError(
-            'gram_target must be a tensor of shape [1, {}, {}]'
-            .format(c, c)
-        )
-    gram_style = NST.gram_matrix(style_output)
-    return tf.reduce_mean(tf.square(gram_style - gram_target))
+        _, h, w, c = tf.shape(style_output).numpy()
+        if not isinstance(gram_target, (tf.Tensor, tf.Variable)) \
+                or gram_target.shape != (1, c, c):
+            raise TypeError(
+                'gram_target must be a tensor of shape [1, {}, {}]'
+                .format(c, c)
+            )
+        gram_style = NST.gram_matrix(style_output)
+        return tf.reduce_mean(tf.square(gram_style - gram_target))
 
-def style_cost(self, style_outputs):
-    """Calculates the style cost for generated image
+    def style_cost(self, style_outputs):
+        """Calculates the style cost for generated image
 
-    Args:
-        style_outputs (list(tf.Tensor)): style outputs for the generated
-            image.
+        Args:
+            style_outputs (list(tf.Tensor)): style outputs for the generated
+                image.
 
-    Returns:
-        The style cost
+        Returns:
+            The style cost
 
-    """
-    length = len(self.style_layers)
-    if not isinstance(style_outputs, list) \
-            or len(style_outputs) != length + 1:
-        raise TypeError('style_outputs must be a list with a length of {}'.
-                        format(length + 1))
-    style_score = 0
-    weight = 1 / length
-    for target, output in zip(self.gram_style_features, style_outputs[:-1]):
-        style_score += weight * self.layer_style_cost(output, target)
-    return style_score
+        """
+        length = len(self.style_layers)
+        if not isinstance(style_outputs, list) \
+                or len(style_outputs) != length + 1:
+            raise TypeError('style_outputs must be
 
