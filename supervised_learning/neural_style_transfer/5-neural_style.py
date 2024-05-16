@@ -5,16 +5,17 @@ NST - Initialize
 import numpy as np
 import tensorflow as tf
 
+
 class NST:
-    """class used to perform tasks for neural style transfer"""
+    """Class used to perform tasks for neural style transfer"""
 
     style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1',
                     'block4_conv1', 'block5_conv1']
     content_layer = 'block5_conv2'
 
     def __init__(self, style_image, content_image, alpha=1e4, beta=1):
-        """define and initialize variables"""
-        
+        """Define and initialize variables"""
+
         err_1 = "style_image must be a numpy.ndarray with shape (h, w, 3)"
         if not isinstance(style_image, np.ndarray):
             raise TypeError(err_1)
@@ -48,7 +49,7 @@ class NST:
     @staticmethod
     def scale_image(image):
         """
-        function that rescales an image such that its pixels values are
+        Rescales an image such that its pixels values are
         between 0 and 1 and its largest side is 512 pixels
         """
         err = "image must be a numpy.ndarray with shape (h, w, 3)"
@@ -68,7 +69,7 @@ class NST:
         return image[tf.newaxis, :]
 
     def load_model(self):
-        """function that instantiates a VGG19 model from Keras"""
+        """Instantiates a VGG19 model from Keras"""
         vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
         vgg.trainable = False
 
@@ -79,7 +80,7 @@ class NST:
 
     @staticmethod
     def gram_matrix(input_layer):
-        """function that calculates a Gram matrix, taking a layer as input"""
+        """Calculates a Gram matrix, taking a layer as input"""
         err = "input_layer must be a tensor of rank 4"
         if not isinstance(input_layer, (tf.Tensor, tf.Variable)):
             raise TypeError(err)
@@ -93,7 +94,7 @@ class NST:
         return result
 
     def generate_features(self):
-        """function that extracts the style and content features used to calculate the neural style cost"""
+        """Extracts the style and content features used to calculate the neural style cost"""
         style_image = tf.keras.applications.vgg19.preprocess_input(self.style_image * 255.0)
         content_image = tf.keras.applications.vgg19.preprocess_input(self.content_image * 255.0)
 
@@ -104,7 +105,7 @@ class NST:
         self.content_feature = content_output
 
     def layer_style_cost(self, style_output, gram_target):
-        """function that calculates the style cost for a single style_output layer"""
+        """Calculates the style cost for a single style_output layer"""
         c = style_output.shape[-1]
         err_1 = "style_output must be a tensor of rank 4"
         if not isinstance(style_output, (tf.Tensor, tf.Variable)):
@@ -122,7 +123,7 @@ class NST:
         return style_cost
 
     def style_cost(self, style_outputs):
-        """function that calculates the style cost for all style_output layers"""
+        """Calculates the style cost for all style_output layers"""
         err = "style_outputs must be a list with a length of {}".format(len(self.style_layers))
         if not isinstance(style_outputs, list):
             raise TypeError(err)
@@ -140,10 +141,31 @@ class NST:
         style_cost = tf.add_n(style_costs)
         return style_cost
 
-# Example usage:
+
+# Example usage and checks
 if __name__ == "__main__":
     style_image = np.random.rand(224, 224, 3).astype(np.float32)
     content_image = np.random.rand(224, 224, 3).astype(np.float32)
-    nst = NST(style_image, content_image)
-    print(nst.style_cost(nst.gram_style_features))
+
+    # Normal output check
+    try:
+        nst = NST(style_image, content_image)
+        print("Normal initialization succeeded")
+    except Exception as e:
+        print("Normal initialization failed:", e)
+
+    # Different style_layers check
+    NST.style_layers = ['block1_conv1', 'block3_conv1', 'block5_conv1']
+    try:
+        nst = NST(style_image, content_image)
+        print("Different style_layers initialization succeeded")
+    except Exception as e:
+        print("Different style_layers initialization failed:", e)
+
+    # Invalid style_outputs check
+    try:
+        invalid_style_outputs = "invalid output"
+        nst.style_cost(invalid_style_outputs)
+    except Exception as e:
+        print("Invalid style_outputs check:", e)
 
