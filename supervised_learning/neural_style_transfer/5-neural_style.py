@@ -11,6 +11,21 @@ import tensorflow as tf
 
 class NST:
 
+     """
+    NST class performs Neural Style Transfer.
+
+    Attributes:
+        style_layers (list): List of VGG19 layer names used for style extraction.
+        content_layer (str): VGG19 layer name used for content extraction.
+        style_image (np.ndarray): The style image.
+        content_image (np.ndarray): The content image.
+        alpha (float): Weight for the content cost.
+        beta (float): Weight for the style cost.
+        model (tf.keras.Model): The VGG19 model modified to output intermediate layers.
+        content_feature (tf.Tensor): The content feature extracted from the content image.
+        gram_style_features (list): List of Gram matrices for the style image.
+    """
+
     style_layers = ['block1_conv1',
                     'block2_conv1',
                     'block3_conv1',
