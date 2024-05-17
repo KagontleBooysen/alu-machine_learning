@@ -124,4 +124,3 @@ class NST:
         ])
         J_style /= tf.cast(len(style_outputs), tf.float32)
         return J_style
-
