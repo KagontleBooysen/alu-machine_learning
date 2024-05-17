@@ -7,8 +7,6 @@ import tensorflow as tf
 
 NST = __import__('0-neural_style').NST
 
-def compare_tensors(tensor1, tensor2, tol=1e-5):
-    return np.allclose(tensor1.numpy(), tensor2.numpy(), atol=tol)
 
 if __name__ == '__main__':
     style_image = mpimg.imread("starry_night.jpg")
@@ -26,13 +24,10 @@ if __name__ == '__main__':
     print(nst.alpha)
     print(nst.beta)
     print(tf.executing_eagerly())
-    
-    # Adjusted assertion with tolerance
-    assert(compare_tensors(scaled_style, nst.style_image))
-    assert(compare_tensors(scaled_content, nst.content_image))
+    assert(np.array_equal(scaled_style, nst.style_image))
+    assert(np.array_equal(scaled_content, nst.content_image))
 
     plt.imshow(nst.style_image[0])
     plt.show()
     plt.imshow(nst.content_image[0])
     plt.show()
-
