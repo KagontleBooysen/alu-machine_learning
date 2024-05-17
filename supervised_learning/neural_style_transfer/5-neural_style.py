@@ -90,7 +90,9 @@ class NST:
         style_features = self.model(preprocessed_s)[:-1]
         self.content_feature = self.model(preprocessed_c)[-1]
         self.gram_style_features = [
-            self.gram_matrix(style_feature) for style_feature in style_features]
+            self.gram_matrix(style_feature)
+            for style_feature in style_features
+        ]
 
     def layer_style_cost(self, style_output, gram_target):
         if not (isinstance(style_output, tf.Tensor) or
@@ -101,11 +103,13 @@ class NST:
         if not (isinstance(gram_target, tf.Tensor) or
                 isinstance(gram_target, tf.Variable)) or \
                 gram_target.shape.dims != [m, nc, nc]:
-            raise TypeError('gram_target must be a tensor of shape [{}, {}, {}]'.format(
-                m, nc, nc))
+            raise TypeError(
+                'gram_target must be a tensor of shape [{}, {}, {}]'.format(
+                    m, nc, nc))
         gram_style = self.gram_matrix(style_output)
         return tf.reduce_sum(
-            tf.square(gram_style - gram_target)) / tf.square(tf.cast(nc, tf.float32))
+            tf.square(gram_style - gram_target)) / tf.square(
+            tf.cast(nc, tf.float32))
 
     def style_cost(self, style_outputs):
         if not isinstance(style_outputs, list) or \
@@ -114,8 +118,10 @@ class NST:
                 'style_outputs must be a list with a length of {}'.format(
                     len(self.style_layers)))
         J_style = tf.add_n([
-            self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
-            for i in range(len(style_outputs))])
+            self.layer_style_cost(
+                style_outputs[i], self.gram_style_features[i])
+            for i in range(len(style_outputs))
+        ])
         J_style /= tf.cast(len(style_outputs), tf.float32)
         return J_style
 
