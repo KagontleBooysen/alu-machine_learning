@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+
+"""
+This module implements Neural Style Transfer (NST) using TensorFlow and VGG19.
+NST is used to combine the content of one image with the style of another.
+"""
+
 import numpy as np
 import tensorflow as tf
 
