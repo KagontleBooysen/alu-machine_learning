@@ -2,12 +2,13 @@
 import numpy as np
 import tensorflow as tf
 
+
 class NST:
-    
+
     style_layers = ['block1_conv1',
                     'block2_conv1',
-                    'block3_conv1', 
-                    'block4_conv1', 
+                    'block3_conv1',
+                    'block4_conv1',
                     'block5_conv1']
     content_layer = 'block5_conv2'
 
@@ -95,3 +96,4 @@ class NST:
             raise TypeError('content_output must be a tensor of shape {}'.format(self.content_feature.shape))
         _, nh, nw, nc = content_output.shape.dims
         return tf.reduce_sum(tf.square(content_output - self.content_feature)) / tf.cast(nh * nw * nc, tf.float32)
+
