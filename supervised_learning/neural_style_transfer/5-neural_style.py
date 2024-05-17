@@ -93,7 +93,7 @@ class NST:
         return tf.reduce_sum(tf.square(gram_style - gram_target)) / tf.square(tf.cast(nc, tf.float32))
 
     def style_cost(self, style_outputs):
-        if not isinstance(style_outputs, list) or len(style_outputs) != len(self.style_layers):
+        if type(style_outputs) is not list or len(style_outputs) != len(self.style_layers):
             raise TypeError('style_outputs must be a list with a length of {}'.format(len(self.style_layers)))
         J_style = tf.add_n([
             self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
