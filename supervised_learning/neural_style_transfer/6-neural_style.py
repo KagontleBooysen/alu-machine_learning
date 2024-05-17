@@ -2,9 +2,9 @@
 """
 Neural Style Transfer (NST) using TensorFlow.
 
-This module defines a class NST for performing neural style transfer. 
-Neural style transfer is the process of blending the style of one image 
-(the style image) with the content of another image (the content image) 
+This module defines a class NST for performing neural style transfer.
+Neural style transfer is the process of blending the style of one image
+(the style image) with the content of another image (the content image)
 to create a new image.
 
 Example usage:
@@ -227,4 +227,3 @@ class NST:
         _, nh, nw, nc = content_output.shape.dims
         return tf.reduce_sum(tf.square(content_output - self.content_feature)) \
             / tf.cast(nh * nw * nc, tf.float32)
-
