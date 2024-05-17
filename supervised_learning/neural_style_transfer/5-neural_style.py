@@ -14,14 +14,14 @@ class NST:
     NST class performs Neural Style Transfer.
 
     Attributes:
-        style_layers (list): List of VGG19 layer names used for style extraction.
+        style_layers (list): List of VGG19 layer names used.
         content_layer (str): VGG19 layer name used for content extraction.
         style_image (np.ndarray): The style image.
         content_image (np.ndarray): The content image.
         alpha (float): Weight for the content cost.
         beta (float): Weight for the style cost.
-        model (tf.keras.Model): The VGG19 model modified to output intermediate layers.
-        content_feature (tf.Tensor): The content feature extracted from the content image.
+        model (tf.keras.Model): The VGG19 model modified.
+        content_feature (tf.Tensor): The content feature.
         gram_style_features (list): List of Gram matrices for the style image.
     """
 
@@ -40,8 +40,8 @@ class NST:
             beta (float): Weight for the style cost.
 
         Raises:
-            TypeError: If style_image or content_image are not valid numpy arrays
-                       with shape (h, w, 3) or if alpha/beta are not non-negative numbers.
+            TypeError: If style_image or content_image
+                       with shape (h, w, 3) or if alpha/beta.
         """
         tf.enable_eager_execution()
         if (type(style_image) is not np.ndarray or style_image.ndim != 3 or
@@ -75,7 +75,7 @@ class NST:
             np.ndarray: The scaled image.
 
         Raises:
-            TypeError: If the input image is not a valid numpy array with shape (h, w, 3).
+            TypeError: If the input image is not a valid numpy shape (h, w, 3).
         """
         if (type(image) is not np.ndarray or image.ndim != 3 or
                 image.shape[2] != 3):
@@ -190,7 +190,7 @@ class NST:
         Computes the total style cost from all the style layers.
 
         Args:
-            style_outputs (list of tf.Tensor or tf.Variable): The style outputs.
+            style_outputs (list of tf.Tensor or tf.Variable): The style output.
 
         Returns:
             tf.Tensor: The total style cost.
@@ -210,4 +210,3 @@ class NST:
         ])
         J_style /= tf.cast(len(style_outputs), tf.float32)
         return J_style
-
