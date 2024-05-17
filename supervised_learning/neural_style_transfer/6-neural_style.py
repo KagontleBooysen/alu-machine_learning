@@ -41,7 +41,8 @@ class NST:
         scale = max_dims / max(shape[0], shape[1])
         new_shape = (int(scale * shape[0]), int(scale * shape[1]))
         image = np.expand_dims(image, axis=0)
-        image = tf.clip_by_value(tf.image.resize_bicubic(image, new_shape) / 255.0, 0.0, 1.0)
+        image = tf.clip_by_value(tf.image.resize_bicubic(image, new_shape) /
+                                 255.0, 0.0, 1.0)
         return image
 
     def load_model(self):
@@ -75,11 +76,14 @@ class NST:
         return G / tf.cast(nh * nw, tf.float32)
 
     def generate_features(self):
-        preprocessed_s = tf.keras.applications.vgg19.preprocess_input(self.style_image * 255)
-        preprocessed_c = tf.keras.applications.vgg19.preprocess_input(self.content_image * 255)
+        preprocessed_s = tf.keras.applications.vgg19.preprocess_input(
+            self.style_image * 255)
+        preprocessed_c = tf.keras.applications.vgg19.preprocess_input(
+            self.content_image * 255)
         style_features = self.model(preprocessed_s)[:-1]
         self.content_feature = self.model(preprocessed_c)[-1]
-        self.gram_style_features = [self.gram_matrix(style_feature) for style_feature in style_features]
+        self.gram_style_features = [
+            self.gram_matrix(style_feature) for style_feature in style_features]
 
     def layer_style_cost(self, style_output, gram_target):
         if not (isinstance(style_output, tf.Tensor) or
@@ -88,14 +92,17 @@ class NST:
         m, _, _, nc = style_output.shape.dims
         if not (isinstance(gram_target, tf.Tensor) or
                 isinstance(gram_target, tf.Variable)) or gram_target.shape.dims != [m, nc, nc]:
-            raise TypeError('gram_target must be a tensor of shape [{}, {}, {}]'.format(m, nc, nc))
+            raise TypeError('gram_target must be a tensor of shape [{}, {}, {}]'.format(
+                m, nc, nc))
         gram_style = self.gram_matrix(style_output)
         return tf.reduce_sum(tf.square(gram_style - gram_target)) / tf.square(tf.cast(nc, tf.float32))
 
     def style_cost(self, style_outputs):
         if type(style_outputs) is not list or len(style_outputs) != len(self.style_layers):
-            raise TypeError('style_outputs must be a list with a length of {}'.format(len(self.style_layers)))
-        J_style = tf.add_n([self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
+            raise TypeError('style_outputs must be a list with a length of {}'.format(
+                len(self.style_layers)))
+        J_style = tf.add_n([self.layer_style_cost(style_outputs[i],
+                                                  self.gram_style_features[i])
                             for i in range(len(style_outputs))])
         J_style /= tf.cast(len(style_outputs), tf.float32)
         return J_style
@@ -103,6 +110,9 @@ class NST:
     def content_cost(self, content_output):
         if not (isinstance(content_output, tf.Tensor) or
                 isinstance(content_output, tf.Variable)) or content_output.shape.dims != self.content_feature.shape.dims:
-            raise TypeError('content_output must be a tensor of shape {}'.format(self.content_feature.shape))
+            raise TypeError('content_output must be a tensor of shape {}'.format(
+                self.content_feature.shape))
         _, nh, nw, nc = content_output.shape.dims
-        return tf.reduce_sum(tf.square(content_output - self.content_feature)) / tf.cast(nh * nw * nc, tf.float32)
+        return tf.reduce_sum(tf.square(content_output - self.content_feature)) / tf.cast(
+            nh * nw * nc, tf.float32)
+
