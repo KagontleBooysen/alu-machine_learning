@@ -10,8 +10,7 @@ import tensorflow as tf
 
 
 class NST:
-
-     """
+    """
     NST class performs Neural Style Transfer.
 
     Attributes:
@@ -34,6 +33,19 @@ class NST:
     content_layer = 'block5_conv2'
 
     def __init__(self, style_image, content_image, alpha=1e4, beta=1):
+        """
+        Initializes the NST instance.
+
+        Args:
+            style_image (np.ndarray): The style image.
+            content_image (np.ndarray): The content image.
+            alpha (float): Weight for the content cost.
+            beta (float): Weight for the style cost.
+
+        Raises:
+            TypeError: If style_image or content_image are not valid numpy arrays
+                       with shape (h, w, 3) or if alpha/beta are not non-negative numbers.
+        """
         tf.enable_eager_execution()
         if (type(style_image) is not np.ndarray or style_image.ndim != 3 or
                 style_image.shape[2] != 3):
@@ -56,6 +68,18 @@ class NST:
 
     @staticmethod
     def scale_image(image):
+        """
+        Rescales an image such that its largest dimension is 512 pixels.
+
+        Args:
+            image (np.ndarray): The image to be scaled.
+
+        Returns:
+            np.ndarray: The scaled image.
+
+        Raises:
+            TypeError: If the input image is not a valid numpy array with shape (h, w, 3).
+        """
         if (type(image) is not np.ndarray or image.ndim != 3 or
                 image.shape[2] != 3):
             raise TypeError(
@@ -70,6 +94,9 @@ class NST:
         return image
 
     def load_model(self):
+        """
+        Loads the VGG19 model and modifies it to output intermediate layers.
+        """
         vgg = tf.keras.applications.vgg19.VGG19(
             include_top=False, weights='imagenet')
         x = vgg.input
@@ -95,6 +122,18 @@ class NST:
 
     @staticmethod
     def gram_matrix(input_layer):
+        """
+        Computes the Gram matrix of an input tensor.
+
+        Args:
+            input_layer (tf.Tensor or tf.Variable): The input tensor.
+
+        Returns:
+            tf.Tensor: The Gram matrix.
+
+        Raises:
+            TypeError: If the input_layer is not a tensor of rank 4.
+        """
         if not (isinstance(input_layer, tf.Tensor) or
                 isinstance(input_layer, tf.Variable)) or \
                 input_layer.shape.ndims != 4:
@@ -104,6 +143,9 @@ class NST:
         return G / tf.cast(nh * nw, tf.float32)
 
     def generate_features(self):
+        """
+        Extracts the features used to compute the style and content cost.
+        """
         preprocessed_s = tf.keras.applications.vgg19.preprocess_input(
             self.style_image * 255)
         preprocessed_c = tf.keras.applications.vgg19.preprocess_input(
@@ -116,6 +158,20 @@ class NST:
         ]
 
     def layer_style_cost(self, style_output, gram_target):
+        """
+        Computes the style cost for a single layer.
+
+        Args:
+            style_output (tf.Tensor or tf.Variable): The style output tensor.
+            gram_target (tf.Tensor or tf.Variable): The target Gram matrix.
+
+        Returns:
+            tf.Tensor: The style cost for the layer.
+
+        Raises:
+            TypeError: If style_output is not a tensor of rank 4 or
+                       gram_target is not a tensor of the correct shape.
+        """
         if not (isinstance(style_output, tf.Tensor) or
                 isinstance(style_output, tf.Variable)) or \
                 style_output.shape.ndims != 4:
@@ -133,6 +189,18 @@ class NST:
             tf.cast(nc, tf.float32))
 
     def style_cost(self, style_outputs):
+        """
+        Computes the total style cost from all the style layers.
+
+        Args:
+            style_outputs (list of tf.Tensor or tf.Variable): The style outputs.
+
+        Returns:
+            tf.Tensor: The total style cost.
+
+        Raises:
+            TypeError: If style_outputs is not a list with the correct length.
+        """
         if not isinstance(style_outputs, list) or \
                 len(style_outputs) != len(self.style_layers):
             raise TypeError(
@@ -145,3 +213,4 @@ class NST:
         ])
         J_style /= tf.cast(len(style_outputs), tf.float32)
         return J_style
+
