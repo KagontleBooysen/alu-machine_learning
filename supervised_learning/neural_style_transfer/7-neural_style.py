@@ -62,13 +62,14 @@ class NST:
         Returns:
             tf.Tensor: Rescaled image.
 
-        Raises:
-            TypeError: If input image is not a valid numpy array.
-        """
-        if (type(image) is not np.ndarray or image.ndim != 3 or 
-                image.shape[2] != 3):
-            raise TypeError('image must be a numpy.ndarray with shape '
-                            '(h, w, 3)')
+            Raises:
+    TypeError: If input image is not a valid numpy array.
+
+if (type(image) is not np.ndarray or image.ndim != 3 or
+        image.shape[2] != 3):
+    raise TypeError('image must be a numpy.ndarray with shape '
+                    '(h, w, 3)')
+
         max_dims = 512
         shape = image.shape[:2]
         scale = max_dims / max(shape[0], shape[1])
