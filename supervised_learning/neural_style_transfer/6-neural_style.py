@@ -180,7 +180,7 @@ class NST:
             raise TypeError('style_output must be a tensor of rank 4')
         m, _, _, nc = style_output.shape.dims
         if not (isinstance(gram_target, tf.Tensor) or
-                isinstance(gram_target, tf.Variable)) or \ 
+                isinstance(gram_target, tf.Variable)) or \
                 gram_target.shape.dims != [m, nc, nc]:
             raise TypeError('gram_target must be a tensor of shape [{}, {}, '
                             '{}]'.format(m, nc, nc))
@@ -230,5 +230,7 @@ class NST:
             raise TypeError('content_output must be a tensor of shape {}'
                             .format(self.content_feature.shape))
         _, nh, nw, nc = content_output.shape.dims
-        return tf.reduce_sum(tf.square(content_output - self.content_feature)) \
-            / tf.cast(nh * nw * nc, tf.float32)
+        return tf.reduce_sum(tf.square(content_output -
+                                       self.content_feature)) / \
+            tf.cast(nh * nw * nc, tf.float32)
+
