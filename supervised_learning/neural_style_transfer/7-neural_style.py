@@ -19,9 +19,10 @@ Attributes:
 import numpy as np
 import tensorflow as tf
 
+
 class NST:
     """NST class for performing neural style transfer."""
-    
+
     style_layers = ['block1_conv1',
                     'block2_conv1',
                     'block3_conv1',
@@ -31,11 +32,11 @@ class NST:
 
     def __init__(self, style_image, content_image, alpha=1e4, beta=1):
         tf.enable_eager_execution()
-        if (type(style_image) is not np.ndarray or style_image.ndim != 3 or 
+        if (type(style_image) is not np.ndarray or style_image.ndim != 3 or
                 style_image.shape[2] != 3):
             raise TypeError('style_image must be a numpy.ndarray with shape '
                             '(h, w, 3)')
-        if (type(content_image) is not np.ndarray or content_image.ndim != 3 or 
+        if (type(content_image) is not np.ndarray or content_image.ndim != 3 or
                 content_image.shape[2] != 3):
             raise TypeError('content_image must be a numpy.ndarray with shape '
                             '(h, w, 3)')
