@@ -233,4 +233,3 @@ class NST:
         return tf.reduce_sum(tf.square(content_output -
                                        self.content_feature)) / \
             tf.cast(nh * nw * nc, tf.float32)
-
