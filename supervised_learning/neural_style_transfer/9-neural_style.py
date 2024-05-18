@@ -3,10 +3,8 @@
 Defines class NST that performs tasks for neural style transfer
 """
 
-
 import numpy as np
 import tensorflow as tf
-
 
 class NST:
     """
@@ -47,7 +45,7 @@ class NST:
             calculates the style cost for generated image
         def content_cost(self, content_output):
             calculates the content cost for the generated image
-        def total cost(self, generated_image):
+        def total_cost(self, generated_image):
             calculates the total cost for the generated image
         def compute_grads(self, generated_image):
             calculates the gradients for the generated image
@@ -96,7 +94,7 @@ class NST:
         if (type(beta) is not float and type(beta) is not int) or beta < 0:
             raise TypeError("beta must be a non-negative number")
 
-        tf.enable_eager_execution()
+        tf.compat.v1.enable_eager_execution()
 
         self.style_image = self.scale_image(style_image)
         self.content_image = self.scale_image(content_image)
@@ -138,11 +136,11 @@ class NST:
             w_new = 512
             h_new = int(h * (512 / w))
 
-        resized = tf.image.resize_bicubic(np.expand_dims(image, axis=0),
-                                          size=(h_new, w_new))
-        rescaled = resized / 255
-        rescaled = tf.clip_by_value(rescaled, 0, 1)
-        return (rescaled)
+        resized = tf.image.resize(np.expand_dims(image, axis=0),
+                                  size=(h_new, w_new),
+                                  method='bicubic')
+        rescaled = resized / 255.0
+        return tf.clip_by_value(rescaled, 0.0, 1.0)
 
     def load_model(self):
         """
@@ -150,33 +148,19 @@ class NST:
 
         Model's input should match VGG19 input
         Model's output should be a list containing outputs of VGG19 layers
-            listed in style_layers followed by content_layers
+            listed in style_layers followed by content_layer
 
         Saves the model in the instance attribute model
         """
-        VGG19_model = tf.keras.applications.VGG19(include_top=False,
-                                                  weights='imagenet')
-        VGG19_model.save("VGG19_base_model")
-        custom_objects = {'MaxPooling2D': tf.keras.layers.AveragePooling2D}
+        vgg = tf.keras.applications.VGG19(include_top=False,
+                                          weights='imagenet')
+        vgg.trainable = False
 
-        vgg = tf.keras.models.load_model("VGG19_base_model",
-                                         custom_objects=custom_objects)
+        style_outputs = [vgg.get_layer(name).output for name in self.style_layers]
+        content_output = vgg.get_layer(self.content_layer).output
 
-        style_outputs = []
-        content_output = None
-
-        for layer in vgg.layers:
-            if layer.name in self.style_layers:
-                style_outputs.append(layer.output)
-            if layer.name in self.content_layer:
-                content_output = layer.output
-
-            layer.trainable = False
-
-        outputs = style_outputs + [content_output]
-
-        model = tf.keras.models.Model(vgg.input, outputs)
-        self.model = model
+        model_outputs = style_outputs + [content_output]
+        self.model = tf.keras.models.Model(vgg.input, model_outputs)
 
     @staticmethod
     def gram_matrix(input_layer):
@@ -193,15 +177,14 @@ class NST:
         """
         if not isinstance(input_layer, (tf.Tensor, tf.Variable)):
             raise TypeError("input_layer must be a tensor of rank 4")
-        if len(input_layer.shape) is not 4:
+        if len(input_layer.shape) != 4:
             raise TypeError("input_layer must be a tensor of rank 4")
         _, h, w, c = input_layer.shape
-        product = h * w
-        features = tf.reshape(input_layer, (product, c))
+        features = tf.reshape(input_layer, (-1, c))
         gram = tf.matmul(features, features, transpose_a=True)
         gram = tf.expand_dims(gram, axis=0)
-        gram /= tf.cast(product, tf.float32)
-        return (gram)
+        gram /= tf.cast(h * w, tf.float32)
+        return gram
 
     def generate_features(self):
         """
@@ -210,21 +193,16 @@ class NST:
         Sets public instance attribute:
             gram_style_features and content_feature
         """
-        VGG19_model = tf.keras.applications.vgg19
-        preprocess_style = VGG19_model.preprocess_input(
-            self.style_image * 255)
-        preprocess_content = VGG19_model.preprocess_input(
-            self.content_image * 255)
+        vgg_preprocessor = tf.keras.applications.vgg19.preprocess_input
 
-        style_features = self.model(preprocess_style)[:-1]
-        content_feature = self.model(preprocess_content)[-1]
+        style_image = vgg_preprocessor(self.style_image * 255)
+        content_image = vgg_preprocessor(self.content_image * 255)
 
-        gram_style_features = []
-        for feature in style_features:
-            gram_style_features.append(self.gram_matrix(feature))
+        style_outputs = self.model(style_image)[:-1]
+        content_output = self.model(content_image)[-1]
 
-        self.gram_style_features = gram_style_features
-        self.content_feature = content_feature
+        self.gram_style_features = [self.gram_matrix(output) for output in style_outputs]
+        self.content_feature = content_output
 
     def layer_style_cost(self, style_output, gram_target):
         """
@@ -240,14 +218,15 @@ class NST:
             the layer's style cost
         """
         if not isinstance(style_output, (tf.Tensor, tf.Variable)) or \
-           len(style_output.shape) is not 4:
+           len(style_output.shape) != 4:
             raise TypeError("style_output must be a tensor of rank 4")
-        one, h, w, c = style_output.shape
         if not isinstance(gram_target, (tf.Tensor, tf.Variable)) or \
-           len(gram_target.shape) is not 3:
+           len(gram_target.shape) != 3:
             raise TypeError(
-                "gram_target must be a tensor of shape [1, {}, {}]".format(
-                    c, c))
+                "gram_target must be a tensor of shape [1, c, c]")
+
+        gram_style = self.gram_matrix(style_output)
+        return tf.reduce_mean(tf.square(gram_style - gram_target))
 
     def style_cost(self, style_outputs):
         """
@@ -260,11 +239,15 @@ class NST:
         returns:
             the style cost
         """
-        length = len(self.style_layers)
-        if type(style_outputs) is not list or len(style_outputs) != length:
+        if type(style_outputs) is not list or len(style_outputs) != len(self.style_layers):
             raise TypeError(
-                "style_outputs must be a list with a length of {}".format(
-                    length))
+                "style_outputs must be a list with a length of {}".format(len(self.style_layers)))
+
+        total_style_cost = 0
+        weight_per_style_layer = 1.0 / float(len(self.style_layers))
+        for style_output, gram_target in zip(style_outputs, self.gram_style_features):
+            total_style_cost += weight_per_style_layer * self.layer_style_cost(style_output, gram_target)
+        return total_style_cost
 
     def content_cost(self, content_output):
         """
@@ -277,11 +260,7 @@ class NST:
         returns:
             the style cost
         """
-        shape = self.content_feature.shape
-        if not isinstance(content_output, (tf.Tensor, tf.Variable)) or \
-           content_output.shape != shape:
-            raise TypeError(
-                "content_output must be a tensor of shape {}".format(shape))
+        return tf.reduce_mean(tf.square(content_output - self.content_feature))
 
     def total_cost(self, generated_image):
         """
@@ -297,11 +276,22 @@ class NST:
                 J_content: content cost
                 J_style: style cost
         """
-        shape = self.content_image.shape
         if not isinstance(generated_image, (tf.Tensor, tf.Variable)) or \
-           generated_image.shape != shape:
+           len(generated_image.shape) != 4 or generated_image.shape[0] != 1:
             raise TypeError(
-                "generated_image must be a tensor of shape {}".format(shape))
+                "generated_image must be a tensor of shape (1, nh, nw, 3)")
+
+        vgg_preprocessor = tf.keras.applications.vgg19.preprocess_input
+        preprocessed_image = vgg_preprocessor(generated_image * 255)
+        outputs = self.model(preprocessed_image)
+
+        style_outputs = outputs[:-1]
+        content_output = outputs[-1]
+
+        J_style = self.style_cost(style_outputs)
+        J_content = self.content_cost(content_output)
+        J_total = self.alpha * J_content + self.beta * J_style
+        return J_total, J_content, J_style
 
     def compute_grads(self, generated_image):
         """
@@ -313,16 +303,15 @@ class NST:
 
         returns:
             gradients, J_total, J_content, J_style
-                gradients [tf.Tensor]: contatins gradients for generated image
+                gradients [tf.Tensor]: contains gradients for generated image
                 J_total: total cost for the generated image
                 J_content: content cost
                 J_style: style cost
         """
-        shape = self.content_image.shape
-        if not isinstance(generated_image, (tf.Tensor, tf.Variable)) or \
-           generated_image.shape != shape:
-            raise TypeError(
-                "generated_image must be a tensor of shape {}".format(shape))
+        with tf.GradientTape() as tape:
+            J_total, J_content, J_style = self.total_cost(generated_image)
+        gradients = tape.gradient(J_total, generated_image)
+        return gradients, J_total, J_content, J_style
 
     def generate_image(self, iterations=1000, step=None, lr=0.01,
                        beta1=0.9, beta2=0.99):
@@ -357,24 +346,41 @@ class NST:
         """
         if type(iterations) is not int:
             raise TypeError("iterations must be an integer")
-        if iterations < 0:
+        if iterations <= 0:
             raise ValueError("iterations must be positive")
-        if step is not None and type(step) is not int:
-            raise TypeError("step must be an integer")
-        if step is not None and (step < 0 or step > iterations):
-            raise ValueError("step must be positive and less than iterations")
-        if type(lr) is not int and type(lr) is not float:
+        if step is not None and (type(step) is not int or step <= 0):
+            raise TypeError("step must be a positive integer")
+        if step is not None and step > iterations:
+            raise ValueError("step must be less than or equal to iterations")
+        if type(lr) is not float and type(lr) is not int:
             raise TypeError("lr must be a number")
-        if lr < 0:
+        if lr <= 0:
             raise ValueError("lr must be positive")
-        if type(beta1) is not float:
-            raise TypeError("beta1 must be a float")
-        if beta1 < 0 or beta1 > 1:
-            raise ValueError("beta1 must be in the range [0, 1]")
-        if type(beta2) is not float:
-            raise TypeError("beta2 must be a float")
-        if beta2 < 0 or beta2 > 1:
-            raise ValueError("beta2 must be in the range [0, 1]")
-        generated_image = self.content_image
-        cost = 0
-        return generated_image, cost
+        if type(beta1) is not float or not (0 <= beta1 <= 1):
+            raise ValueError("beta1 must be a float in the range [0, 1]")
+        if type(beta2) is not float or not (0 <= beta2 <= 1):
+            raise ValueError("beta2 must be a float in the range [0, 1]")
+
+        generated_image = tf.Variable(self.content_image, dtype=tf.float32)
+        optimizer = tf.optimizers.Adam(learning_rate=lr, beta1=beta1, beta2=beta2)
+        best_cost = float('inf')
+        best_image = None
+
+        for i in range(iterations):
+            grads, J_total, J_content, J_style = self.compute_grads(generated_image)
+            optimizer.apply_gradients([(grads, generated_image)])
+            clipped_image = tf.clip_by_value(generated_image, 0.0, 1.0)
+            generated_image.assign(clipped_image)
+
+            if J_total < best_cost:
+                best_cost = J_total
+                best_image = generated_image.numpy()
+
+            if step and (i % step == 0 or i == iterations - 1):
+                print("Iteration {}:".format(i))
+                print("total cost = {}".format(J_total))
+                print("content cost = {}".format(J_content))
+                print("style cost = {}".format(J_style))
+
+        return best_image, best_cost
+
