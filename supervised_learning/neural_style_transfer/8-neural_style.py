@@ -320,23 +320,28 @@ class NST:
 
         return (total_cost, content_cost, style_cost)
 
-    def compute_grads(self, generated_image):
-    """Function to compute the gradients for the generated image."""
-    
-    # Ensure that the generated_image is a tensor
-    if not isinstance(generated_image, (tf.Tensor, tf.Variable)):
-        raise TypeError("generated_image must be a tensor or a variable")
-    
-    # Ensure that the shape of the generated_image matches the content image
-    if generated_image.shape != self.content_image.shape:
-        raise ValueError("generated_image must have the same shape as the content image")
-    
-    # Use tf.GradientTape to compute the gradients
-    with tf.GradientTape() as tape:
-        # Calculate the total loss
-        loss, _, _, _ = self.total_cost(generated_image)
-    
-    # Compute the gradients of the loss with respect to the generated image
-    gradients = tape.gradient(loss, generated_image)
-    
-    return gradients, loss
+     def compute_grads(self, generated_image):
+        """function that computes the gradients for the generated image"""
+
+        err = "generated_image must be a tensor of shape {}".format(
+            self.content_image.shape)
+        if not isinstance(generated_image, (tf.Tensor, tf.Variable)):
+            raise TypeError(err)
+        if generated_image.shape != self.content_image.shape:
+            raise TypeError(err)
+
+        # Note: in the main file, generated_images is defined as
+        # a tf.Variable to contain the image to optimize. It is initialized
+        # with self.content_image (the tf.Variable must be the same shape
+        # as the content image)
+
+        # Use tf.GradientTape to update the generated_image (float image)
+        with tf.GradientTape() as tape:
+            # Calculate the loss in a call to total_cost()
+            loss = self.total_cost(generated_image)
+            total_cost, content_cost, style_cost = loss
+
+        # Infer the gradients passing in the loss and the generated_image
+        gradients = tape.gradient(total_cost, generated_image)
+
+        return (gradients, total_cost, content_cost, style_cost)
