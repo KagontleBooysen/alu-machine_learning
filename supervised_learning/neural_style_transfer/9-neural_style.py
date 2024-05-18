@@ -51,9 +51,6 @@ class NST:
             calculates the total cost for the generated image
         def compute_grads(self, generated_image):
             calculates the gradients for the generated image
-        def generate_image(self, iterations=1000, step=None, lr=0.01,
-            beta1=0.9, beta2=0.99):
-            generates the neural style transfered image
     """
     style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1',
                     'block4_conv1', 'block5_conv1']
@@ -323,58 +320,3 @@ class NST:
            generated_image.shape != shape:
             raise TypeError(
                 "generated_image must be a tensor of shape {}".format(shape))
-
-    def generate_image(self, iterations=1000, step=None, lr=0.01,
-                       beta1=0.9, beta2=0.99):
-        """
-        Generates the neural style transferred image
-
-        parameters:
-            iterations [int]:
-                number of iterations to perform gradient descent over
-            step [int or None]:
-                step at which to print information about training
-                prints:
-                    i: iteration
-                    J_total: total cost for generated image
-                    J_content: content cost
-                    J_style: style cost
-            lr [float]:
-                learning rate for gradient descent
-            beta1 [float]:
-                beta1 parameter for gradient descent
-            beta2 [float[:
-                beta2 parameter for gradient descent
-
-        Gradient descent should be performed using Adam optimization.
-        The generated image should be initialized as the content image.
-        Keep track of the best cost and the image associated with that cost.
-
-        returns:
-            generated_image, cost
-                generated_image: best generated image
-                cost: best cost
-        """
-        if type(iterations) is not int:
-            raise TypeError("iterations must be an integer")
-        if iterations < 0:
-            raise ValueError("iterations must be positive")
-        if step is not None and type(step) is not int:
-            raise TypeError("step must be an integer")
-        if step is not None and (step < 0 or step > iterations):
-            raise ValueError("step must be positive and less than iterations")
-        if type(lr) is not int and type(lr) is not float:
-            raise TypeError("lr must be a number")
-        if lr < 0:
-            raise ValueError("lr must be positive")
-        if type(beta1) is not float:
-            raise TypeError("beta1 must be a float")
-        if beta1 < 0 or beta1 > 1:
-            raise ValueError("beta1 must be in the range [0, 1]")
-        if type(beta2) is not float:
-            raise TypeError("beta2 must be a float")
-        if beta2 < 0 or beta2 > 1:
-            raise ValueError("beta2 must be in the range [0, 1]")
-        generated_image = self.content_image
-        cost = 0
-        return generated_image, cost
