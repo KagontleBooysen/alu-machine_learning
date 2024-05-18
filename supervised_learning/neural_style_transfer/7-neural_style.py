@@ -242,4 +242,3 @@ class NST:
         J_content = self.content_cost(content_output)
         J = (self.alpha * J_content) + (self.beta * J_style)
         return J, J_content, J_style
-
