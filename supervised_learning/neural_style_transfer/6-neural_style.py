@@ -138,7 +138,8 @@ class NST:
             TypeError: If input_layer is not a tensor of rank 4.
         """
         if not (isinstance(input_layer, tf.Tensor) or
-                isinstance(input_layer, tf.Variable)) or input_layer.shape.ndims != 4:
+                isinstance(input_layer, tf.Variable)) or \
+                input_layer.shape.ndims != 4:
             raise TypeError('input_layer must be a tensor of rank 4')
         _, nh, nw, _ = input_layer.shape.dims
         G = tf.linalg.einsum('bijc,bijd->bcd', input_layer, input_layer)
@@ -155,7 +156,9 @@ class NST:
         style_features = self.model(preprocessed_s)[:-1]
         self.content_feature = self.model(preprocessed_c)[-1]
         self.gram_style_features = [
-            self.gram_matrix(style_feature) for style_feature in style_features]
+            self.gram_matrix(style_feature)
+            for style_feature in style_features
+        ]
 
     def layer_style_cost(self, style_output, gram_target):
         """
@@ -172,11 +175,13 @@ class NST:
             TypeError: If inputs are not valid tensors.
         """
         if not (isinstance(style_output, tf.Tensor) or
-                isinstance(style_output, tf.Variable)) or style_output.shape.ndims != 4:
+                isinstance(style_output, tf.Variable)) or \
+                style_output.shape.ndims != 4:
             raise TypeError('style_output must be a tensor of rank 4')
         m, _, _, nc = style_output.shape.dims
         if not (isinstance(gram_target, tf.Tensor) or
-                isinstance(gram_target, tf.Variable)) or gram_target.shape.dims != [m, nc, nc]:
+                isinstance(gram_target, tf.Variable)) or \ 
+                gram_target.shape.dims != [m, nc, nc]:
             raise TypeError('gram_target must be a tensor of shape [{}, {}, '
                             '{}]'.format(m, nc, nc))
         gram_style = self.gram_matrix(style_output)
