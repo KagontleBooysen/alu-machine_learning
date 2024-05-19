@@ -11,10 +11,12 @@ import tensorflow as tf
 class NST:
     """
     Performs tasks for Neural Style Transfer
+
     public class attributes:
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1',
                         'block4_conv1', 'block5_conv1']
         content_layer = 'block5_conv2'
+
     instance attributes:
         style_image: preprocessed style image
         content_image: preprocessed style image
@@ -23,14 +25,17 @@ class NST:
         model: the Keras model used to calculate cost
         gram_style_features: list of gram matrices from style layer outputs
         content_feature: the content later output of the content image
+
     class constructor:
         def __init__(self, style_image, content_image, alpha=1e4, beta=1)
+
     static methods:
         def scale_image(image):
             rescales an image so the pixel values are between 0 and 1
                 and the largest side is 512 pixels
         def gram_matrix(input_layer):
             calculates gram matrices
+
     public instance methods:
         def load_model(self):
             creates model used to calculate cost from VGG19 Keras base model
@@ -57,6 +62,7 @@ class NST:
     def __init__(self, style_image, content_image, alpha=1e4, beta=1):
         """
         Class constructor for Neural Style Transfer class
+
         parameters:
             style_image [numpy.ndarray with shape (h, w, 3)]:
                 image used as style reference
@@ -64,6 +70,7 @@ class NST:
                 image used as content reference
             alpha [float]: weight for content cost
             beta [float]: weight for style cost
+
         Raises TypeError if input are in incorrect format
         Sets TensorFlow to execute eagerly
         Sets instance attributes
@@ -103,14 +110,17 @@ class NST:
         """
         Rescales an image such that its pixels values are between 0 and 1
             and its largest side is 512 pixels
+
         parameters:
             image [numpy.ndarray of shape (h, w, 3)]:
                  image to be rescaled
+
         Scaled image should be tf.tensor with shape (1, h_new, w_new, 3)
             where max(h_new, w_new) is 512 and
             min(h_new, w_new) is scaled proportionately
         Image should be resized using bicubic interpolation.
         Image's pixels should be rescaled from range [0, 255] to [0, 1].
+
         returns:
             the scaled image
         """
@@ -137,9 +147,11 @@ class NST:
     def load_model(self):
         """
         Creates the model used to calculate cost from VGG19 Keras base model
+
         Model's input should match VGG19 input
         Model's output should be a list containing outputs of VGG19 layers
             listed in style_layers followed by content_layers
+
         Saves the model in the instance attribute model
         """
         VGG19_model = tf.keras.applications.VGG19(include_top=False,
@@ -170,10 +182,12 @@ class NST:
     def gram_matrix(input_layer):
         """
         Calculates gram matrices
+
         parameters:
             input_layer [an instance of tf.Tensor or tf.Variable
                 of shape (1, h, w, c)]:
                 contains the layer output to calculate gram matrix for
+
         returns:
             tf.Tensor of shape (1, c, c) containing gram matrix of input_layer
         """
@@ -192,6 +206,7 @@ class NST:
     def generate_features(self):
         """
         Extracts the features used to calculate neural style cost
+
         Sets public instance attribute:
             gram_style_features and content_feature
         """
@@ -214,11 +229,13 @@ class NST:
     def layer_style_cost(self, style_output, gram_target):
         """
         Calculates the style cost for a single layer
+
         parameters:
             style_output [tf.Tensor of shape (1, h, w, c)]:
                 contains the layer style output of the generated image
             gram_target [tf.Tensor of shape (1, c, c)]:
                 the gram matrix of the target style output for that layer
+
         returns:
             the layer's style cost
         """
@@ -235,9 +252,11 @@ class NST:
     def style_cost(self, style_outputs):
         """
         Calculates the style cost for generated image
+
         parameters:
             style_outputs [list of tf.Tensors]:
                 contains stye outputs for the generated image
+
         returns:
             the style cost
         """
@@ -250,9 +269,11 @@ class NST:
     def content_cost(self, content_output):
         """
         Calculates the content cost for generated image
+
         parameters:
             content_output [tf.Tensor]:
                 contains content output for the generated image
+
         returns:
             the style cost
         """
@@ -265,9 +286,11 @@ class NST:
     def total_cost(self, generated_image):
         """
         Calculates the total cost for the generated image
+
         parameters:
             generated_image [tf.Tensor of shape (1, nh, nw, 3)]:
                 contains the generated image
+
         returns:
             (J, J_content, J_style) [tuple]:
                 J: total cost
@@ -283,9 +306,11 @@ class NST:
     def compute_grads(self, generated_image):
         """
         Calculates the gradients for the generated image
+
         parameters:
             generated_image [tf.Tensor of shape (1, nh, nw, 3)]:
                 contains the generated image
+
         returns:
             gradients, J_total, J_content, J_style
                 gradients [tf.Tensor]: contatins gradients for generated image
@@ -303,6 +328,7 @@ class NST:
                        beta1=0.9, beta2=0.99):
         """
         Generates the neural style transferred image
+
         parameters:
             iterations [int]:
                 number of iterations to perform gradient descent over
@@ -319,9 +345,11 @@ class NST:
                 beta1 parameter for gradient descent
             beta2 [float[:
                 beta2 parameter for gradient descent
+
         Gradient descent should be performed using Adam optimization.
         The generated image should be initialized as the content image.
         Keep track of the best cost and the image associated with that cost.
+
         returns:
             generated_image, cost
                 generated_image: best generated image
