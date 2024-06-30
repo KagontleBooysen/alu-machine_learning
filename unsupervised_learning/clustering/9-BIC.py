@@ -31,7 +31,8 @@ def BIC(X, kmin=1, kmax=None, iterations=1000, tol=1e-5, verbose=False):
     log_likelihood = np.zeros(kmax + 1 - kmin)
     results = []
     for k in range(kmin, kmax + 1):
-        pi, m, S, _, log_likelihood[k - kmin] = expectation_maximization(X, k, iterations=iterations, tol=tol, verbose=verbose)
+        pi, m, S, _, log_likelihood[k - kmin] = expectation_maximization(
+                X, k, iterations=iterations, tol=tol, verbose=verbose)
         results.append((pi, m, S))
         p = k * (d + 2) * (d + 1) / 2 - 1
         b[k - kmin] = p * np.log(n) - 2 * log_likelihood[k - kmin]
