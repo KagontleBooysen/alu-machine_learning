@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" Do the Dimensionality Reduction """
+"""t-SNE method"""
+
 import numpy as np
 pca = __import__('1-pca').pca
 P_affinities = __import__('4-P_affinities').P_affinities
@@ -8,44 +9,53 @@ cost = __import__('7-cost').cost
 
 
 def tsne(X, ndims=2, idims=50, perplexity=30.0, iterations=1000, lr=500):
-    """
-    this function performs t-SNE on a dataset
-    For the first 100 iterations, perform early exaggeration with
-    an exaggeration of 4
-    a(t) = 0.5 for the first 20 iterations and 0.8 thereafter
-    Returns:
-        Y, a numpy.ndarray of shape (n, ndims) containing the embedded
-    """
+    """calculates t-SNE transformation:
+    Arg:
+       - X: np.ndarray shape (n, d) containing the dataset to be transform:
+             - n is the number of data points
+             - d is the number of dimensions in each point
+       - ndims is the new dimensional representation of X
+       - idims is the intermediate dimensional representation of X after PCA
+       - perplexity is the perplexity
+       - iterations is the number of iterations
+       - lr is the learning rate
 
-    # X is a numpy.ndarray of shape (n, d) containing the dataset
+    Returns:
+       - Y: np.ndarray of shape (n, ndim) containing the optimized low
+            dimensional transformation of X
+    """
+    n, d = X.shape
+    initial_momentum = 0.5
+    final_momentum = 0.8
+
     X = pca(X, idims)
-    n, _ = X.shape
-    # P is a numpy.ndarray of shape (n, n) containing the pairwise affinities
-    P = P_affinities(X, perplexity=perplexity) * 4
-    # Y is a numpy.ndarray of shape (n, ndims) containing the embedded points
+    P = P_affinities(X, perplexity=perplexity)
+    # early exageration
+    P = P * 4
+
     Y = np.random.randn(n, ndims)
-    # iY is a numpy.ndarray of shape (n, ndims) containing the embedded points
-    emc = np.zeros((n, ndims))
+    iY = np.zeros((n, ndims))
 
     for i in range(iterations):
-        # Perform early exaggeration
+
         dY, Q = grads(Y, P)
-
-        # momentum is the learning rate for the first 20 iterations
-        if i <= 20:
-            momentum = 0.5
+        if i < (20):
+            momentum = initial_momentum
         else:
-            momentum = 0.8
+            momentum = final_momentum
 
-        # Update the embedding
-        Y = Y + (momentum * emc - lr * dY) - np.tile(np.mean(Y, 0), (n, 1))
+        # perform the update
+        iY = momentum * iY - lr * dY
+        Y = Y + iY
+        Y = Y - np.tile(np.mean(Y, 0), (n, 1))
 
-        # Update the embedding for the next iteration
-        if (i + 1) != 0 and (i + 1) % 100 == 0:
+        # print cost of the T SEN model
+        if (i + 1) % 100 == 0:
             C = cost(P, Q)
-            print("Cost at iteration {}: {}".format(i + 1, C))
+            print("Cost at iteration {}: {}".format((i+1), C))
 
+        # perform the aerly exagerations for first 100 iterations
         if (i + 1) == 100:
-            P = P / 4.
+            P = P / 4
 
-    return Y
+    return (Y)
