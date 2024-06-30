@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""t-sne"""
-
+"""
+8. t-SNE
+"""
 import numpy as np
 pca = __import__('1-pca').pca
 P_affinities = __import__('4-P_affinities').P_affinities
@@ -9,56 +10,40 @@ cost = __import__('7-cost').cost
 
 
 def tsne(X, ndims=2, idims=50, perplexity=30.0, iterations=1000, lr=500):
-    """
-    T-sne function
+    """ Function that performs a t-SNE transformation
     Args:
-        X: numpy.ndarray of shape (n, d) containing the dataset to be
-           transformed by t-SNE
-        ndims: the new dimensional representation of X
-        idims: the intermediate dimensional representation of X after
-                PCA
-        perplexity:  perplexity
-        iterations: number of iterations
-        lr: learning rate
-    Returns: Y, a numpy.ndarray of shape (n, ndim) containing the optimized
-             low dimensional
+        X: is a numpy.ndarray of shape (n, d) containing the dataset to be
+            transformed by t-SNE
+            n - is the number of data points
+            d - is the number of dimensions in each point
+        ndims - is the new dimensional representation of X
+        idims - is the intermediate dimensional representation of X after PCA
+        perplexity - is the perplexity
+        iterations - is the number of iterations
+        lr - is the learning rate
+    Returns:
+        Y, a numpy.ndarray of shape (n, ndim) containing the optimized low
+        dimensional transformation of X
     """
-    n, d = X.shape
+    X = pca(X, idims)
+    n, _ = X.shape
     initial_momentum = 0.5
     final_momentum = 0.8
-
-    # min_gain = 0.01
-    # gains = np.ones((n, ndims))
-
-    X = pca(X, idims)
-    P = P_affinities(X, perplexity=perplexity)
+    P = P_affinities(X, perplexity=perplexity) * 4
     Y = np.random.randn(n, ndims)
-    iY = Y
-    # early exaggeration
-    P = P * 4.
-
-    for i in range(iterations):
-
+    iY = np.zeros((n, ndims))
+    for i in range(1, iterations + 1):
         dY, Q = grads(Y, P)
-        if i <= 20:
+        if i < 20:
             momentum = initial_momentum
         else:
             momentum = final_momentum
-
-        # delta-bar-delta algorithm for SDG optional
-        # gains = (gains + 0.2) * ((dY > 0.) != (iY > 0.)) + \
-        #        (gains * 0.8) * ((dY > 0.) == (iY > 0.))
-        # gains[gains < min_gain] = min_gain"""
-
         iY = momentum * iY - lr * dY
         Y = Y + iY
         Y = Y - np.tile(np.mean(Y, 0), (n, 1))
-
-        if (i + 1) % 100 == 0:
+        if i != 0 and i % 100 == 0:
             C = cost(P, Q)
-            print('Cost at iteration {}: {}'.format((i+1), C))
-
+            print("Cost at iteration {}: {}".format(i, C))
         if i == 100:
             P = P / 4.
-
     return Y
