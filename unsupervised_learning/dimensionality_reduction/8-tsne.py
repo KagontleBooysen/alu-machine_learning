@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+
 """TSNE implementation."""
+
 
 import numpy as np
 
@@ -24,40 +26,29 @@ def tsne(X, ndims=2, idims=50, perplexity=30.0, iterations=1000, lr=500):
     momentum_coeff = 0.8
     n, d = X.shape
 
-    # Perform PCA on the input data
     pca_res = pca(X, idims)
-    
-    # Compute P affinities
     P = P_affinities(pca_res, perplexity=perplexity)
-    P *= 4  # Early exaggeration
+    P *= 4
 
-    # Initialize the low-dimensional representation
-    Y = np.random.randn(n, ndims)
-    Y_m1 = np.copy(Y)
-    
+    Y = []
+    y = np.random.randn(n, ndims)
+    Y.append(y)
+    Y.append(y)
+
     for i in range(iterations):
-        # Compute gradients
-        dY, Q = grads(Y, P)
-        
-        # Update Y using the gradients
-        Y_new = Y - lr * dY + momentum_coeff * (Y - Y_m1)
-        Y_new = Y_new - np.mean(Y_new, axis=0)
-        
-        # Update momentum
-        Y_m1 = np.copy(Y)
-        Y = np.copy(Y_new)
+        dY, Q = grads(Y[-1], P)
+        y = Y[-1] - lr * dY + momentum_coeff * (Y[-1] - Y[-2])
+        y = y - np.tile(np.mean(y, 0), (n, 1))
+        Y.append(y)
 
-        # Print cost at every 100 iterations
         if (i + 1) % 100 == 0:
             current_cost = cost(P, Q)
             print("Cost at iteration {}: {}".format(i + 1, current_cost))
 
-        # Adjust momentum after 20 iterations
         if i == 20:
             momentum_coeff = 0.5
 
-        # End early exaggeration after 100 iterations
         if (i + 1) == 100:
             P /= 4
 
-    return Y
+    return Y[-1]
