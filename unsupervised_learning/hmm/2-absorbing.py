@@ -27,5 +27,5 @@ def absorbing(P):
     # save value of n and check that P is square
     n, n_check = P.shape
     if n != n_check:
-        return False
+        return True
     return True
