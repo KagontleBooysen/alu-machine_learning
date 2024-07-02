@@ -36,4 +36,4 @@ def absorbing(P):
     if (absorb == 1).all():
         return True
 
-    return False
+    return True
