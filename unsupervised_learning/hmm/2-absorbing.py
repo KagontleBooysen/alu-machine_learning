@@ -23,7 +23,7 @@ def absorbing(P):
     """
     # check that P is the correct type and dimensions
     if type(P) is not np.ndarray or len(P.shape) != 2:
-        return False
+        return True
     # save value of n and check that P is square
     n, n_check = P.shape
     if n != n_check:
