@@ -1,79 +1,95 @@
 #!/usr/bin/env python3
-"""hidden markov chain"""
+"""The Baum-Welch Algorithm"""
 import numpy as np
 
 
 def forward(Observation, Emission, Transition, Initial):
-    """performs the forward algorithm"""
+    """The forward step of hmm"""
+    # a = Transition (5, 5)
+    # b = Emission shape = (5, 6)
+    # V = Observation shape = (365,)
     T = Observation.shape[0]
     N = Transition.shape[0]
 
-    F = np.zeros((N, T))
-    F[:, 0] = Initial.T * Emission[:, Observation[0]]
+    alpha = np.zeros((N, T))
+    alpha[:, 0, np.newaxis] = (Initial.T * Emission[:, Observation[0]]).T
 
-    for x in range(1, T):
-        for n in range(N):
-            tran = Transition[:, n]
-            E = Emission[n, Observation[x]]
-            F[n, x] = np.sum(tran * F[:, x - 1]) * E
-    P = np.sum(F[:, -1])
-    return P, F
+    for t in range(1, Observation.shape[0]):
+        for j in range(Transition.shape[0]):
+            alpha[j, t] = (alpha[:, t - 1].dot(Transition[:, j]) *
+                           Emission[j, Observation[t]])
+
+    prob = np.sum(alpha[:, -1])
+
+    return prob, alpha
 
 
 def backward(Observation, Emission, Transition, Initial):
-    """performs the backward algorithm for a hidden markov model"""
-    N, M = Emission.shape
+    """Goes backwards, given the information"""
+    # a = Transition (5, 5)
+    # b = Emission shape = (5, 6)
+    # V = Observation shape = (365,)
+
     T = Observation.shape[0]
-    B = np.zeros((N, T))
-    B[:, T - 1] = np.ones(N)
-    for j in range(T - 2, -1, -1):
-        for i in range(N):
-            aux = Emission[:, Observation[j + 1]] * Transition[i, :]
-            B[i, j] = np.dot(B[:, j + 1], aux)
-    P = np.sum(Initial.T * Emission[:, Observation[0]] * B[:, 0])
-    return P, B
+    N = Transition.shape[0]
+
+    beta = np.zeros((N, T))
+    beta[:, T - 1] = np.ones((N))
+
+    for t in range(T - 2, -1, -1):
+        for j in range(N):
+            beta[j, t] = ((beta[:, t + 1] *
+                           Emission[:, Observation[t + 1]]).
+                          dot(Transition[j, :]))
+
+    likelihood = np.sum(np.sum(Initial.T * Emission[:, Observation[0]]
+                               * beta[:, 0]))
+
+    return likelihood, beta
 
 
 def baum_welch(Observations, Transition, Emission, Initial, iterations=1000):
-    """performs the Baum-Welch algorithm for a hidden markov model"""
-    if iterations > 454:
-        iterations = 454
-    N, M = Emission.shape
+    """An implementation of the Baum-Welch algorithm"""
+    # a = Transition (5, 5)
+    # b = Emission shape = (5, 6)
+    # V = Observation shape = (365,)
+
+    M = Transition.shape[0]
     T = Observations.shape[0]
-    a = Transition.copy()
-    b = Emission.copy()
+
     for n in range(iterations):
-        _, al = forward(Observations, b, a, Initial)
-        _, be = backward(Observations, b, a, Initial)
-        xi = np.zeros((N, N, T - 1))
-        for col in range(T - 1):
-            denominator = np.dot(np.dot(al[:, col].T, a) *
-                                 b[:, Observations[col + 1]].T,
-                                 be[:, col + 1])
-            for row in range(N):
-                numerator = al[row, col] * a[row, :] * \
-                            b[:, Observations[col + 1]].T * \
-                            be[:, col + 1].T
-                xi[row, :, col] = numerator / denominator
-        g = np.sum(xi, axis=1)
-        a = np.sum(xi, 2) / np.sum(g, axis=1).reshape((-1, 1))
-        g = np.hstack(
-            (g, np.sum(xi[:, :, T - 2], axis=0).reshape((-1, 1))))
-        denominator = np.sum(g, axis=1)
-        for k in range(M):
-            b[:, k] = np.sum(g[:, Observations == k], axis=1)
-        b = np.divide(b, denominator.reshape((-1, 1)))
-    return a, b
+        alpha = forward(Observations, Emission, Transition, Initial)[1].T
+        beta = backward(Observations, Emission, Transition, Initial)[1].T
 
+        old_T = Transition
+        old_E = Emission
 
-# Example usage:
-Observations = np.array([0, 1, 2, 1, 0])
-Transition = np.array([[0.7, 0.2, 0.1], [0.3, 0.5, 0.2], [0.4, 0.3, 0.3]])
-Emission = np.array([[0.9, 0.1], [0.2, 0.8], [0.4, 0.6]])
-Initial = np.array([[0.5], [0.3], [0.2]])
+        xi = np.zeros((M, M, T - 1))
+        for t in range(T - 1):
+            denominator = np.dot(np.dot(alpha[t, :].T, Transition) *
+                                 Emission[:, Observations[t + 1]].T,
+                                 beta[t + 1, :])
+            for i in range(M):
+                numerator = (alpha[t, i] * Transition[i, :] *
+                             Emission[:, Observations[t + 1]].T *
+                             beta[t + 1, :])
+                xi[i, :, t] = numerator / denominator
+        gamma = np.sum(xi, axis=1)
+        Transition = np.sum(xi, 2) / np.sum(gamma, axis=1).reshape((-1, 1))
 
-a, b = baum_welch(Observations, Transition, Emission, Initial, iterations=1000)
-print("Transition probabilities:")
-print(a)
-print("Emission probabilities:")
-print(b)
+        gamma = np.hstack((gamma,
+                           np.sum(xi[:, :, T - 2], axis=0).reshape((-1, 1))))
+
+        K = Emission.shape[1]
+        denominator = np.sum(gamma, axis=1)
+        for l in range(K):
+            Emission[:, l] = np.sum(gamma[:, Observations == l], axis=1)
+
+        Emission = np.divide(Emission, denominator.reshape((-1, 1)))
+
+        """if ((np.isclose(old_T, Transition).any() or
+             np.isclose(old_E, Emission).any())):
+            print(":)")
+            return Transition, Emission"""
+
+    return Transition, Emission
