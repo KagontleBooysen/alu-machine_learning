@@ -20,7 +20,7 @@ def forward(Observation, Emission, Transition, Initial):
         P = np.sum(F[:, -1])
         return P, F
     except Exception as e:
-        None, None
+        return None, None
 
 
 def backward(Observation, Emission, Transition, Initial):
