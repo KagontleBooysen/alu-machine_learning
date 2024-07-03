@@ -23,16 +23,23 @@ def absorbing(P):
         if not np.isclose(elem, 1):
             return False
 
+    # Check if there is at least one absorbing state
     diagonal = np.diag(P)
-    if (diagonal == 1).all():
-        return True
+    absorbing_states = (diagonal == 1)
+    if not np.any(absorbing_states):
+        return False
 
-    absorb = (diagonal == 1).astype(int)
-    for row in range(len(diagonal)):
-        for col in range(len(diagonal)):
-            if P[row, col] > 0 and absorb[col] == 1:
-                absorb[row] = 1
-    if (absorb == 1).all():
-        return True
+    # Create a reachability matrix
+    reachability = np.linalg.matrix_power(P, n)
+    
+    # Check if every state can reach at least one absorbing state
+    for i in range(n):
+        if not np.any(reachability[i, absorbing_states]):
+            return False
 
-    return False
+    return True
+
+# Test the function with the provided matrix
+matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0.5, 0.5], [0, 0.5, 0.5, 0]])
+print(absorbing(matrix))  # Expected output: True
+
