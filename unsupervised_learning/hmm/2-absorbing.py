@@ -4,7 +4,6 @@ Determines if a markov chain is absorbing
 """
 import numpy as np
 
-
 def absorbing(P):
     """
     Determines if a markov chain is absorbing
@@ -28,10 +27,10 @@ def absorbing(P):
     if (diagonal == 1).all():
         return True
 
-    absorb = (diagonal == 1)
+    absorb = (diagonal == 1).astype(int)
     for row in range(len(diagonal)):
         for col in range(len(diagonal)):
-            if P[row, col] > 0 and absorb[col]:
+            if P[row, col] > 0 and absorb[col] == 1:
                 absorb[row] = 1
     if (absorb == 1).all():
         return True
