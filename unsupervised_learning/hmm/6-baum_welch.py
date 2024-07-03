@@ -25,8 +25,6 @@ def forward(Observation, Emission, Transition, Initial):
             aux = alpha[:, col - 1] * Transition[:, row]
             alpha[row, col] = np.sum(aux * Emission[row, Observation[col]])
 
-    # P = np.sum(alpha[:, -1])
-
     return alpha
 
 
@@ -39,15 +37,11 @@ def backward(Observation, Emission, Transition, Initial):
 
     beta = np.zeros((N, T))
     beta[:, T - 1] = np.ones((N))
-    # Loop in backward way from T-1 to
-    # Due to python indexing the actual loop will be T-2 to 0
     for col in range(T - 2, -1, -1):
         for row in range(N):
             beta[row, col] = np.sum(beta[:, col + 1] *
                                     Transition[row, :] *
                                     Emission[:, Observation[col + 1]])
-
-    # P = np.sum(Initial[:, 0] * Emission[:, Observation[0]] * beta[:, 0])
 
     return beta
 
@@ -87,8 +81,6 @@ def baum_welch(Observations, Transition, Emission, Initial, iterations=1000):
     if N != Transition.shape[0] or N != Transition.shape[1]:
         return None, None
 
-    # iterations over 454 makes no difference in the output
-    # to check use np.isclose with atol=1e-5 in a and b (store a_prev)
     if iterations > 454:
         iterations = 454
 
@@ -111,7 +103,6 @@ def baum_welch(Observations, Transition, Emission, Initial, iterations=1000):
         gamma = np.sum(xi, axis=1)
         a = np.sum(xi, 2) / np.sum(gamma, axis=1).reshape((-1, 1))
 
-        # Add additional T'th element in gamma
         gamma = np.hstack(
             (gamma, np.sum(xi[:, :, T - 2], axis=0).reshape((-1, 1))))
 
