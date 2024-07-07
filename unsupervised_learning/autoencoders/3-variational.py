@@ -1,72 +1,47 @@
 #!/usr/bin/env python3
-"""
-3-variational.py
-"""
+"""Auto Encoder"""
 import tensorflow.keras as keras
-K = keras
 
 
 def autoencoder(input_dims, hidden_layers, latent_dims):
-    """function that instantiates a VAE instance"""
+    """creates a variational autoencoder"""
+    def sampling(args):
+        mean, log = args
+        epsilon = keras.backend.random_normal(
+            shape=(keras.backend.shape(mean)[0], latent_dims),
+            mean=0,
+            stddev=1
+        )
+        return mean + keras.backend.exp(log / 2) * epsilon
 
-    # Define the encoder model
-    encoder_inputs = K.Input(shape=(input_dims,))
-    # inputs = K.Input(shape=input_dims)
-    for i in range(len(hidden_layers)):
-        layer = K.layers.Dense(units=hidden_layers[i], activation='relu')
-        if i == 0:
-            outputs = layer(encoder_inputs)
-        else:
-            outputs = layer(outputs)
-    # Reparameterization trick
-    layer = K.layers.Dense(units=latent_dims)
-    mean = layer(outputs)
-    layer = K.layers.Dense(units=latent_dims)
-    logvar = layer(outputs)
+    input = keras.Input(shape=(input_dims,))
+    encode = keras.layers.Dense(hidden_layers[0], activation='relu')(input)
+    for dim in hidden_layers[1:]:
+        encode = keras.layers.Dense(dim, activation='relu')(encode)
+    encode_mean = keras.layers.Dense(latent_dims)(encode)
+    encode_log = keras.layers.Dense(latent_dims)(encode)
+    encoding = keras.layers.Lambda(sampling)([encode_mean, encode_log])
+    encoder = keras.Model(input, [encode_mean, encode_log, encoding])
 
-    def sample(alist):
-        """sample z"""
-        mean, logvar = alist
-        eps = K.backend.random_normal(shape=K.backend.shape(mean))
-        z = mean + K.backend.exp(0.5 * logvar) * eps
-        return z
+    input2 = keras.Input(shape=(latent_dims,))
+    decode = keras.layers.Dense(hidden_layers[-1], activation='relu')(input2)
+    for dim in hidden_layers[-2::-1]:
+        decode = keras.layers.Dense(dim, activation='relu')(decode)
+    decode = keras.layers.Dense(input_dims, activation='sigmoid')(decode)
+    decoder = keras.Model(input2, decode)
 
-    z = K.layers.Lambda(sample, output_shape=(latent_dims,))([mean, logvar])
-    encoder = K.models.Model(inputs=encoder_inputs, outputs=[z, mean, logvar])
+    auto = keras.Model(input, decoder(encoder(input)[-1]))
 
-    # Define the decoder model
-    decoder_inputs = K.Input(shape=(latent_dims,))
-    for i in range(len(hidden_layers) - 1, -1, -1):
-        layer = K.layers.Dense(units=hidden_layers[i], activation='relu')
-        if i == len(hidden_layers) - 1:
-            outputs = layer(decoder_inputs)
-        else:
-            outputs = layer(outputs)
-    layer = K.layers.Dense(units=input_dims, activation='sigmoid')
-    outputs = layer(outputs)
-    decoder = K.models.Model(inputs=decoder_inputs, outputs=outputs)
+    def vae_loss(inputs, outputs):
+        r_loss = keras.losses.binary_crossentropy(inputs, outputs)
+        r_loss *= input_dims
+        k_exp = keras.backend.exp(encode_log)
+        k_square = keras.backend.square(encode_mean)
+        lat_loss = -0.5 * keras.backend.sum(1 + encode_log - k_exp
+                                            - k_square, axis=-1)
+        vae = keras.backend.mean(lat_loss + r_loss)
+        return vae
 
-    # Define the autoencoder
-    outputs = encoder(encoder_inputs)
-    outputs = decoder(outputs)
-    auto = K.models.Model(inputs=encoder_inputs, outputs=outputs)
-
-    # Print the model summaries
-    # encoder.summary()
-    # decoder.summary()
-    # auto.summary()
-
-    def compute_loss(inputs, outputs):
-        """cost function"""
-        loss = K.backend.binary_crossentropy(inputs, outputs)
-        loss = K.backend.sum(loss, axis=1)
-        KL_divergence = -0.5 * K.backend.sum(1 + logvar
-                                             - K.backend.square(mean)
-                                             - K.backend.exp(logvar),
-                                             axis=-1)
-        return loss + KL_divergence
-
-    # Compile the autoencoder
-    auto.compile(optimizer='Adam', loss=compute_loss)
+    auto.compile(loss=vae_loss, optimizer='adam')
 
     return encoder, decoder, auto
