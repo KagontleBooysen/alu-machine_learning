@@ -1,77 +1,72 @@
 #!/usr/bin/env python3
 """
-Creates an autoencoder
+3-variational.py
 """
 import tensorflow.keras as keras
+K = keras
 
 
 def autoencoder(input_dims, hidden_layers, latent_dims):
-    """
-    Creates an autoencoder
-    :param input_dims: an integer containing the dimensions of the model input
-    :param hidden_layers: a list containing the number of nodes for each
-    hidden layer in the encoder, respectively
-    :param latent_dims: an integer containing the dimensions of the latent
-    space representation
-    :return: encoder, decoder, auto
-        encoder is the encoder model
-        decoder is the decoder model
-        auto is the full autoencoder model
-    """
-    input_encoder = keras.Input(shape=(input_dims, ))
-    input_decoder = keras.Input(shape=(latent_dims, ))
+    """function that instantiates a VAE instance"""
 
-    # Encoder model
-    encoded = keras.layers.Dense(hidden_layers[0],
-                                 activation='relu')(input_encoder)
-    for enc in range(1, len(hidden_layers)):
-        encoded = keras.layers.Dense(hidden_layers[enc],
-                                     activation='relu')(encoded)
+    # Define the encoder model
+    encoder_inputs = K.Input(shape=(input_dims,))
+    # inputs = K.Input(shape=input_dims)
+    for i in range(len(hidden_layers)):
+        layer = K.layers.Dense(units=hidden_layers[i], activation='relu')
+        if i == 0:
+            outputs = layer(encoder_inputs)
+        else:
+            outputs = layer(outputs)
+    # Reparameterization trick
+    layer = K.layers.Dense(units=latent_dims)
+    mean = layer(outputs)
+    layer = K.layers.Dense(units=latent_dims)
+    logvar = layer(outputs)
 
-    # Latent layer
-    z_mean = keras.layers.Dense(latent_dims, activation=None)(encoded)
-    z_log_sigma = keras.layers.Dense(latent_dims, activation=None)(encoded)
+    def sample(alist):
+        """sample z"""
+        mean, logvar = alist
+        eps = K.backend.random_normal(shape=K.backend.shape(mean))
+        z = mean + K.backend.exp(0.5 * logvar) * eps
+        return z
 
-    def sample_z(args):
-        """
-        Sampling function
-        """
-        mu, sigma = args
-        batch = keras.backend.shape(mu)[0]
-        dim = keras.backend.int_shape(mu)[1]
-        eps = keras.backend.random_normal(shape=(batch, dim))
-        return mu + keras.backend.exp(sigma / 2) * eps
+    z = K.layers.Lambda(sample, output_shape=(latent_dims,))([mean, logvar])
+    encoder = K.models.Model(inputs=encoder_inputs, outputs=[z, mean, logvar])
 
-    z = keras.layers.Lambda(sample_z,
-                            output_shape=(latent_dims,))([z_mean, z_log_sigma])
+    # Define the decoder model
+    decoder_inputs = K.Input(shape=(latent_dims,))
+    for i in range(len(hidden_layers) - 1, -1, -1):
+        layer = K.layers.Dense(units=hidden_layers[i], activation='relu')
+        if i == len(hidden_layers) - 1:
+            outputs = layer(decoder_inputs)
+        else:
+            outputs = layer(outputs)
+    layer = K.layers.Dense(units=input_dims, activation='sigmoid')
+    outputs = layer(outputs)
+    decoder = K.models.Model(inputs=decoder_inputs, outputs=outputs)
 
-    encoder = keras.Model(inputs=input_encoder,
-                          outputs=[z, z_mean, z_log_sigma])
+    # Define the autoencoder
+    outputs = encoder(encoder_inputs)
+    outputs = decoder(outputs)
+    auto = K.models.Model(inputs=encoder_inputs, outputs=outputs)
 
-    # Decoded model
-    decoded = keras.layers.Dense(hidden_layers[-1],
-                                 activation='relu')(input_decoder)
-    for dec in range(len(hidden_layers) - 2, -1, -1):
-        decoded = keras.layers.Dense(hidden_layers[dec],
-                                     activation='relu')(decoded)
-    last = keras.layers.Dense(input_dims, activation='sigmoid')(decoded)
-    decoder = keras.Model(inputs=input_decoder, outputs=last)
+    # Print the model summaries
+    # encoder.summary()
+    # decoder.summary()
+    # auto.summary()
 
-    encoder_output = encoder(input_encoder)[0]
-    decoder_output = decoder(encoder_output)
-    auto = keras.Model(inputs=input_encoder, outputs=decoder_output)
+    def compute_loss(inputs, outputs):
+        """cost function"""
+        loss = K.backend.binary_crossentropy(inputs, outputs)
+        loss = K.backend.sum(loss, axis=1)
+        KL_divergence = -0.5 * K.backend.sum(1 + logvar
+                                             - K.backend.square(mean)
+                                             - K.backend.exp(logvar),
+                                             axis=-1)
+        return loss + KL_divergence
 
-    def vae_loss(x, x_decoded_mean):
-        """
-        VAE loss function
-        """
-        xent_loss = keras.backend.binary_crossentropy(x, x_decoded_mean)
-        xent_loss = keras.backend.sum(xent_loss, axis=1)
-        kl_loss = - 0.5 * keras.backend.mean(
-            1 + z_log_sigma - keras.backend.square(z_mean) - keras.backend.exp(
-                z_log_sigma), axis=-1)
-        return xent_loss + kl_loss
-
-    auto.compile(optimizer='adam', loss=vae_loss)
+    # Compile the autoencoder
+    auto.compile(optimizer='Adam', loss=compute_loss)
 
     return encoder, decoder, auto
